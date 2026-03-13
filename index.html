@@ -635,16 +635,12 @@ function buildLineup(presentArr, goalieArr) {
 
     const segments = goalieSegs.map(goalie => {
         plays[goalie]++;
-        // Goalies not in net this segment must play field
-        const mustPlay = goalieArr.filter(p => p !== goalie && presentArr.includes(p));
-        // Everyone else is in the general pool
-        const pool = presentArr
-            .filter(p => p !== goalie && !mustPlay.includes(p))
+        // All non-goalie players sorted by fewest plays first
+        const rest = presentArr
+            .filter(p => p !== goalie)
             .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
-        // Fill 5 field spots: mustPlay first, then pool
-        const field = [...mustPlay, ...pool].slice(0, 5);
-        const bench = presentArr
-            .filter(p => p !== goalie && !field.includes(p));
+        const field = rest.slice(0, 5);
+        const bench = rest.slice(5);
         field.forEach(p => plays[p]++);
         return { goalie, field, bench };
     });
