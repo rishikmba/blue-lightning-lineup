@@ -490,7 +490,7 @@
         </div>
     </div>
 
-    <div class="app-version">v1.1.1</div>
+    <div class="app-version">v1.2.0</div>
 
 </main>
 
@@ -614,11 +614,18 @@ function shuffle(arr) {
     return a;
 }
 
-function assignGoalies(willing) {
+function assignGoalies(goalieArr) {
+    if (goalieArr.length === 2) {
+        // Halftime switch only — G1 does segs 1&2, G2 does segs 3&4
+        return [goalieArr[0], goalieArr[0], goalieArr[1], goalieArr[1]];
+    }
+    // 3+ goalies: round-robin
     const counts = {};
-    willing.forEach(p => counts[p] = 0);
-    return [0,1,2,3].map(() => {
-        const pick = [...willing].sort((a, b) => counts[a] - counts[b] || willing.indexOf(a) - willing.indexOf(b))[0];
+    goalieArr.forEach(p => counts[p] = 0);
+    return [0, 1, 2, 3].map(() => {
+        const pick = [...goalieArr].sort((a, b) =>
+            counts[a] - counts[b] || goalieArr.indexOf(a) - goalieArr.indexOf(b)
+        )[0];
         counts[pick]++;
         return pick;
     });
@@ -630,17 +637,44 @@ function buildLineup(presentArr, goalieArr) {
     if (goalieArr.length === 0) return { error: 'Please toggle at least one player as willing to be goalie.' };
 
     const goalieSegs = assignGoalies(goalieArr);
+
+    // Pre-plan each goalie's guaranteed Field and Bench in their non-goalie segments
+    const guaranteedField = [new Set(), new Set(), new Set(), new Set()];
+    const guaranteedBench = [new Set(), new Set(), new Set(), new Set()];
+
+    const uniqueGoalies = [...new Set(goalieArr)];
+    uniqueGoalies.forEach(goalie => {
+        const freeSegs = [0, 1, 2, 3].filter(i => goalieSegs[i] !== goalie);
+        // First free seg = guaranteed Field, last free seg = guaranteed Bench
+        if (freeSegs.length >= 1) guaranteedField[freeSegs[0]].add(goalie);
+        if (freeSegs.length >= 2) guaranteedBench[freeSegs[freeSegs.length - 1]].add(goalie);
+        // Middle free segs (if any) handled by general pool
+    });
+
+    // Build segments
     const plays = {};
     presentArr.forEach(p => plays[p] = 0);
 
-    const segments = goalieSegs.map(goalie => {
+    const segments = goalieSegs.map((goalie, i) => {
         plays[goalie]++;
-        // All non-goalie players sorted by fewest plays first
-        const rest = presentArr
-            .filter(p => p !== goalie)
+
+        // Goalies locked into bench or field this segment
+        const benchLocked = [...guaranteedBench[i]].filter(p => presentArr.includes(p));
+        const fieldLocked = [...guaranteedField[i]].filter(p => presentArr.includes(p));
+
+        // Remaining pool: everyone except goalie, benchLocked, fieldLocked
+        const pool = presentArr
+            .filter(p => p !== goalie && !benchLocked.includes(p) && !fieldLocked.includes(p))
             .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
-        const field = rest.slice(0, 5);
-        const bench = rest.slice(5);
+
+        // Fill 5 field spots: fieldLocked first, then pool
+        const remainingFieldSpots = 5 - fieldLocked.length;
+        const poolField = pool.slice(0, remainingFieldSpots);
+        const poolBench = pool.slice(remainingFieldSpots);
+
+        const field = [...fieldLocked, ...poolField];
+        const bench = [...benchLocked, ...poolBench];
+
         field.forEach(p => plays[p]++);
         return { goalie, field, bench };
     });
