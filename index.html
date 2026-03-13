@@ -377,6 +377,46 @@
             margin-bottom: 14px;
             line-height: 1.45;
         }
+
+        .seg-badge-high {
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 10px;
+            padding: 2px 8px;
+            margin-left: 6px;
+        }
+        .seg-badge-low {
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: var(--gray-light);
+            color: var(--gray);
+            border-radius: 10px;
+            padding: 2px 8px;
+            margin-left: 6px;
+        }
+        .time-breakdown {
+            font-size: 0.82rem;
+            color: var(--gray);
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .time-breakdown .hi { color: var(--blue); font-weight: 700; }
+        .time-group-divider {
+            border: none;
+            border-top: 1.5px dashed var(--border);
+            margin: 4px 0;
+        }
+        .app-version {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #adb5bd;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -449,6 +489,8 @@
             <div><b style="color:#b45309">B</b> = Bench</div>
         </div>
     </div>
+
+    <div class="app-version">v1.1.0</div>
 
 </main>
 
@@ -593,11 +635,16 @@ function buildLineup(presentArr, goalieArr) {
 
     const segments = goalieSegs.map(goalie => {
         plays[goalie]++;
-        const rest  = presentArr
-            .filter(p => p !== goalie)
+        // Goalies not in net this segment must play field
+        const mustPlay = goalieArr.filter(p => p !== goalie && presentArr.includes(p));
+        // Everyone else is in the general pool
+        const pool = presentArr
+            .filter(p => p !== goalie && !mustPlay.includes(p))
             .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
-        const field = rest.slice(0, 5);
-        const bench = rest.slice(5);
+        // Fill 5 field spots: mustPlay first, then pool
+        const field = [...mustPlay, ...pool].slice(0, 5);
+        const bench = presentArr
+            .filter(p => p !== goalie && !field.includes(p));
         field.forEach(p => plays[p]++);
         return { goalie, field, bench };
     });
@@ -673,15 +720,53 @@ function generateLineup() {
     // Playing time summary
     const timeSummary = document.getElementById('timeSummary');
     timeSummary.innerHTML = '';
+
+    // Compute segment counts and sort players: high count first
+    const segCounts = {};
     presentArr.forEach(player => {
+        segCounts[player] = segments.filter(seg =>
+            seg.goalie === player || seg.field.includes(player)
+        ).length;
+    });
+    const sortedPlayers = [...presentArr].sort((a, b) => segCounts[b] - segCounts[a]);
+    const uniqueCounts = [...new Set(Object.values(segCounts))].sort((a, b) => b - a);
+
+    // Breakdown line (only if there's a split)
+    if (uniqueCounts.length > 1) {
+        const breakdownEl = document.createElement('div');
+        breakdownEl.className = 'time-breakdown';
+        uniqueCounts.forEach(c => {
+            const count = sortedPlayers.filter(p => segCounts[p] === c).length;
+            const cls = c === uniqueCounts[0] ? 'hi' : '';
+            const span = document.createElement('span');
+            span.className = cls;
+            span.textContent = `${count} player${count !== 1 ? 's' : ''} \u00B7 ${c} segment${c !== 1 ? 's' : ''}`;
+            breakdownEl.appendChild(span);
+        });
+        timeSummary.appendChild(breakdownEl);
+    }
+
+    let lastCount = null;
+    sortedPlayers.forEach(player => {
+        // Insert divider between groups
+        if (lastCount !== null && segCounts[player] !== lastCount) {
+            const hr = document.createElement('hr');
+            hr.className = 'time-group-divider';
+            timeSummary.appendChild(hr);
+        }
+        lastCount = segCounts[player];
+
         const row = document.createElement('div');
         row.className = 'time-row';
         const dots = segments.map(seg => {
             const role = seg.goalie === player ? 'G' : seg.field.includes(player) ? 'F' : 'B';
             return `<div class="dot ${role}">${role}</div>`;
         }).join('');
+        const isHigh = segCounts[player] === uniqueCounts[0] && uniqueCounts.length > 1;
+        const badgeClass = isHigh ? 'seg-badge-high' : 'seg-badge-low';
+        const badgeText = `${segCounts[player]} seg${segCounts[player] !== 1 ? 's' : ''}`;
         row.innerHTML = `
-            <span>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span></span>
+            <span>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span><span class="${badgeClass}">${badgeText}</span></span>
             <div class="time-dots">${dots}</div>
         `;
         timeSummary.appendChild(row);
