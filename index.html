@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>⚽ U8 Lineup Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green:       #1a3a8a;
+            --green-mid:   #2952c4;
+            --green-light: #e8eeff;
+            --blue:        #1a3a8a;
+            --blue-light:  #e8eeff;
+            --yellow:      #f5c518;
+            --yellow-light:#fffbea;
+            --gray:        #6b7280;
+            --gray-light:  #f3f4f6;
+            --border:      #e5e7eb;
+            --white:       #ffffff;
+            --text:        #111827;
+            --red:         #dc2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: #eef2ee;
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* ── Header ── */
+        header {
+            background: linear-gradient(145deg, #0d2060, #1a3a8a, #2952c4);
+            color: white;
+            padding: 24px 16px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '⚡';
+            position: absolute;
+            font-size: 9rem;
+            opacity: 0.08;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            pointer-events: none;
+            line-height: 1;
+        }
+        header h1 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 2.6rem;
+            letter-spacing: 3px;
+            line-height: 1;
+            position: relative;
+        }
+        .team-name {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.05rem;
+            letter-spacing: 6px;
+            color: var(--yellow);
+            margin-bottom: 6px;
+            position: relative;
+        }
+        header p { font-size: 0.82rem; opacity: 0.75; margin-top: 4px; letter-spacing: 0.5px; position: relative; }
+
+        /* ── Main ── */
+        main { padding: 14px; max-width: 580px; margin: 0 auto; }
+
+        /* ── Card ── */
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .card-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.35rem;
+            letter-spacing: 1.5px;
+            color: var(--blue);
+            margin-bottom: 4px;
+        }
+        .card-sub {
+            font-size: 0.78rem;
+            color: var(--gray);
+            margin-bottom: 14px;
+        }
+
+        /* ── Player Grid ── */
+        .player-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 13px 12px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            user-select: none;
+        }
+        .player-card.present {
+            border-color: var(--green-mid);
+            background: var(--blue-light);
+        }
+        .check-circle {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.12s;
+            color: transparent;
+        }
+        .player-card.present .check-circle {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+        .player-name { font-size: 0.97rem; font-weight: 600; }
+        .player-info { display: flex; flex-direction: column; gap: 1px; }
+        .jersey-num { font-size: 0.75rem; color: var(--gray); font-weight: 500; }
+        .player-card.present .jersey-num { color: var(--blue); opacity: 0.8; }
+        .goalie-num { font-size: 0.78rem; color: var(--gray); margin-left: 2px; }
+
+        .counter {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.88rem;
+            color: var(--gray);
+        }
+        .counter strong { color: var(--blue); font-size: 1.1rem; }
+
+        /* ── Goalie List ── */
+        .goalie-list { display: flex; flex-direction: column; gap: 8px; }
+        .goalie-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s;
+        }
+        .goalie-item.on { border-color: var(--blue); background: var(--blue-light); }
+        .goalie-left { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.97rem; }
+
+        .toggle-track {
+            width: 44px; height: 26px;
+            border-radius: 13px;
+            background: var(--border);
+            position: relative;
+            transition: background 0.18s;
+            flex-shrink: 0;
+        }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 3px; left: 3px;
+            transition: transform 0.18s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .goalie-item.on .toggle-track { background: var(--blue); }
+        .goalie-item.on .toggle-track::after { transform: translateX(18px); }
+
+        /* ── Button ── */
+        .btn-generate {
+            width: 100%;
+            padding: 18px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 14px rgba(26,58,138,0.35);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-generate:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(26,58,138,0.25); }
+
+        /* ── Error ── */
+        .error-box {
+            background: #fee2e2;
+            border: 1.5px solid #fca5a5;
+            color: var(--red);
+            border-radius: 12px;
+            padding: 13px 15px;
+            font-size: 0.9rem;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        /* ── Segment Cards ── */
+        .plan-badge {
+            display: inline-block;
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 20px;
+            padding: 4px 13px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .rotation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .seg-card {
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .seg-head {
+            background: var(--blue);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .seg-label {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+        }
+        .seg-timing { font-size: 0.73rem; opacity: 0.82; }
+
+        .seg-body {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+        }
+        .seg-col { padding: 12px 13px; }
+        .seg-col.goalie-col {
+            background: var(--blue-light);
+            border-right: 1.5px solid var(--border);
+        }
+        .col-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+        .goalie-name-big {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--blue);
+        }
+        .chip-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+        .chip {
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.83rem;
+            font-weight: 600;
+        }
+        .bench-bar {
+            padding: 7px 13px;
+            background: var(--gray-light);
+            border-top: 1.5px solid var(--border);
+            font-size: 0.83rem;
+            color: var(--gray);
+        }
+        .bench-bar strong { font-weight: 700; margin-right: 4px; }
+
+        /* ── Playing Time Summary ── */
+        .time-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .time-row:last-child { border-bottom: none; }
+        .time-dots { display: flex; gap: 4px; }
+        .dot {
+            width: 28px; height: 24px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.68rem; font-weight: 700;
+        }
+        .dot.G { background: var(--blue-light); color: var(--blue); }
+        .dot.F { background: var(--blue-light); color: var(--blue); }
+        .dot.B { background: var(--gray-light); color: var(--gray); }
+
+        /* ── Tracking Table ── */
+        .track-wrap { overflow-x: auto; margin-top: 8px; }
+        table.tracker {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 280px;
+        }
+        table.tracker th {
+            background: var(--blue);
+            color: white;
+            padding: 9px 6px;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        table.tracker th:first-child { text-align: left; padding-left: 12px; }
+        table.tracker td {
+            padding: 9px 4px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        table.tracker td:first-child {
+            text-align: left;
+            padding-left: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        table.tracker tr:nth-child(even) td { background: var(--gray-light); }
+
+        .track-cell {
+            width: 38px; height: 32px;
+            border: 2px solid var(--border);
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            user-select: none;
+        }
+        .track-cell[data-s="G"] { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+        .track-cell[data-s="F"] { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+        .track-cell[data-s="B"] { background: var(--yellow-light); color: #b45309; border-color: var(--yellow); }
+
+        .legend {
+            display: flex; gap: 14px; flex-wrap: wrap;
+            margin-top: 10px; font-size: 0.76rem; color: var(--gray);
+        }
+        .legend b { font-weight: 700; }
+
+        /* ── Utility ── */
+        .hidden { display: none !important; }
+        .mt8 { margin-top: 8px; }
+        .mt14 { margin-top: 14px; }
+        hr.divider { border: none; border-top: 1.5px solid var(--border); margin: 16px 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="team-name">⚡ Blue Lightning ⚡</div>
+    <h1>⚽ Lineup Builder</h1>
+    <p>Coach Williams &nbsp;·&nbsp; Coach Kumar &nbsp;·&nbsp; Boys U8</p>
+</header>
+
+<main>
+
+    <!-- ── Step 1: Attendance ── -->
+    <div class="card">
+        <div class="card-title">Step 1 — Who's Here Today?</div>
+        <div class="card-sub">Tap each player to mark them present</div>
+        <div class="player-grid" id="playerGrid"></div>
+        <div class="counter mt8">
+            <strong id="presentCount">0</strong> players ready
+        </div>
+    </div>
+
+    <!-- ── Step 2: Goalies ── -->
+    <div class="card hidden" id="goalieCard">
+        <div class="card-title">Step 2 — Who's Willing to Play Goalie?</div>
+        <div class="card-sub">Toggle anyone who's up for it today — ask around before the game!</div>
+        <div class="goalie-list" id="goalieList"></div>
+    </div>
+
+    <!-- ── Generate ── -->
+    <button class="btn-generate" onclick="generateLineup()">⚡ Build the Lineup</button>
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- ── Rotation Output ── -->
+    <div class="card hidden" id="rotationCard">
+        <div class="rotation-header">
+            <div class="card-title" style="margin-bottom:0">Game Day Lineup</div>
+            <span class="plan-badge" id="planBadge"></span>
+        </div>
+        <div id="segCards"></div>
+
+        <hr class="divider">
+        <div class="card-title mt8">Playing Time</div>
+        <div class="card-sub">Roles across all 4 segments</div>
+        <div id="timeSummary"></div>
+    </div>
+
+    <!-- ── Tracking Sheet ── -->
+    <div class="card hidden" id="trackCard">
+        <div class="card-title">Sideline Tracker</div>
+        <div class="card-sub">Tap a cell to cycle: blank → G → F → B. Pre-filled from the lineup above.</div>
+        <div class="track-wrap">
+            <table class="tracker">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Seg 1</th>
+                        <th>Seg 2</th>
+                        <th>Seg 3</th>
+                        <th>Seg 4</th>
+                    </tr>
+                </thead>
+                <tbody id="trackBody"></tbody>
+            </table>
+        </div>
+        <div class="legend mt8">
+            <div><b style="color:var(--blue)">G</b> = Goalie</div>
+            <div><b style="color:var(--green)">F</b> = Field</div>
+            <div><b style="color:#b45309">B</b> = Bench</div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+const ROSTER = [
+    { name: "Ben",     num: "?"  },
+    { name: "Braden",  num: "5"  },
+    { name: "Brooks",  num: "10" },
+    { name: "Emilio",  num: "3"  },
+    { name: "Ethan",   num: "7"  },
+    { name: "Jaxon",   num: "2"  },
+    { name: "Krish",   num: "9"  },
+    { name: "Liam",    num: "8"  },
+    { name: "Lorenzo", num: "6"  },
+    { name: "Maxi",    num: "4"  },
+];
+
+const SEG_TIMINGS = [
+    "Start → 1st Water Break",
+    "1st Water Break → Halftime",
+    "Halftime → 2nd Water Break",
+    "2nd Water Break → End"
+];
+
+let present       = new Set();
+let goalieWilling = new Set();
+
+function numFor(name) {
+    const p = ROSTER.find(r => r.name === name);
+    return p ? p.num : '?';
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+
+function init() {
+    const grid = document.getElementById('playerGrid');
+    ROSTER.forEach(({ name, num }) => {
+        const el = document.createElement('div');
+        el.className = 'player-card';
+        el.id = 'pc-' + name;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-pressed', 'false');
+        el.onclick = () => togglePresent(name);
+        el.innerHTML = `
+            <div class="check-circle" id="cc-${name}">✓</div>
+            <div class="player-info">
+                <span class="player-name">${name}</span>
+                <span class="jersey-num">#${num}</span>
+            </div>
+        `;
+        grid.appendChild(el);
+    });
+}
+
+function togglePresent(name) {
+    if (present.has(name)) {
+        present.delete(name);
+        goalieWilling.delete(name);
+    } else {
+        present.add(name);
+    }
+    renderPresence();
+    renderGoalieSection();
+}
+
+function renderPresence() {
+    ROSTER.forEach(({ name }) => {
+        const card = document.getElementById('pc-' + name);
+        if (present.has(name)) {
+            card.classList.add('present');
+            card.setAttribute('aria-pressed', 'true');
+        } else {
+            card.classList.remove('present');
+            card.setAttribute('aria-pressed', 'false');
+        }
+    });
+    document.getElementById('presentCount').textContent = present.size;
+}
+
+function renderGoalieSection() {
+    const card = document.getElementById('goalieCard');
+    const list = document.getElementById('goalieList');
+
+    if (present.size === 0) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+
+    list.innerHTML = '';
+    ROSTER.filter(p => present.has(p.name)).forEach(({ name, num }) => {
+        const on = goalieWilling.has(name);
+        const el = document.createElement('div');
+        el.className = 'goalie-item' + (on ? ' on' : '');
+        el.id = 'gi-' + name;
+        el.onclick = () => toggleGoalie(name);
+        el.innerHTML = `
+            <div class="goalie-left">
+                <span>🥅</span>
+                <span>${name}</span>
+                <span class="goalie-num">#${num}</span>
+            </div>
+            <div class="toggle-track"></div>
+        `;
+        list.appendChild(el);
+    });
+}
+
+function toggleGoalie(name) {
+    if (goalieWilling.has(name)) goalieWilling.delete(name);
+    else goalieWilling.add(name);
+    const el = document.getElementById('gi-' + name);
+    if (el) el.classList.toggle('on', goalieWilling.has(name));
+}
+
+// ── Algorithm ───────────────────────────────────────────────────────────────
+
+function assignGoalies(willing) {
+    const counts = {};
+    willing.forEach(p => counts[p] = 0);
+    return [0,1,2,3].map(() => {
+        const pick = [...willing].sort((a, b) => counts[a] - counts[b] || willing.indexOf(a) - willing.indexOf(b))[0];
+        counts[pick]++;
+        return pick;
+    });
+}
+
+function buildLineup(presentArr, goalieArr) {
+    const n = presentArr.length;
+    if (n < 6) return { error: `Need at least 6 players — you have ${n}. Ask around!` };
+    if (goalieArr.length === 0) return { error: 'Please toggle at least one player as willing to be goalie.' };
+
+    const goalieSegs = assignGoalies(goalieArr);
+    const plays = {};
+    presentArr.forEach(p => plays[p] = 0);
+
+    const segments = goalieSegs.map(goalie => {
+        plays[goalie]++;
+        const rest  = presentArr
+            .filter(p => p !== goalie)
+            .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
+        const field = rest.slice(0, 5);
+        const bench = rest.slice(5);
+        field.forEach(p => plays[p]++);
+        return { goalie, field, bench };
+    });
+
+    return { segments, plays };
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function generateLineup() {
+    const presentArr = ROSTER.filter(p => present.has(p.name)).map(p => p.name);
+    const goalieArr  = ROSTER.filter(p => goalieWilling.has(p.name)).map(p => p.name);
+    const result     = buildLineup(presentArr, goalieArr);
+
+    const errBox = document.getElementById('errorBox');
+    if (result.error) {
+        errBox.textContent = '⚠️ ' + result.error;
+        errBox.style.display = 'block';
+        document.getElementById('rotationCard').classList.add('hidden');
+        document.getElementById('trackCard').classList.add('hidden');
+        return;
+    }
+    errBox.style.display = 'none';
+
+    const { segments, plays } = result;
+    document.getElementById('planBadge').textContent = `${presentArr.length} Players`;
+
+    // Segment cards
+    const segCards = document.getElementById('segCards');
+    segCards.innerHTML = '';
+    segments.forEach((seg, i) => {
+        const benchHTML = seg.bench.length
+            ? `<div class="bench-bar"><strong>Bench:</strong> ${seg.bench.map(p => `${p} <span style="opacity:0.6">#${numFor(p)}</span>`).join(', ')}</div>`
+            : '';
+        const card = document.createElement('div');
+        card.className = 'seg-card';
+        card.innerHTML = `
+            <div class="seg-head">
+                <span class="seg-label">Segment ${i+1}</span>
+                <span class="seg-timing">${SEG_TIMINGS[i]}</span>
+            </div>
+            <div class="seg-body">
+                <div class="seg-col goalie-col">
+                    <div class="col-label">🥅 Goalie</div>
+                    <div class="goalie-name-big">${seg.goalie}</div>
+                    <div style="font-size:0.75rem;color:var(--gray);margin-top:2px">#${numFor(seg.goalie)}</div>
+                </div>
+                <div class="seg-col">
+                    <div class="col-label">⚽ Field Players</div>
+                    <div class="chip-wrap">
+                        ${seg.field.map(p => `<span class="chip">${p} <span style="opacity:0.65;font-size:0.75em">#${numFor(p)}</span></span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            ${benchHTML}
+        `;
+        segCards.appendChild(card);
+    });
+
+    // Playing time summary
+    const timeSummary = document.getElementById('timeSummary');
+    timeSummary.innerHTML = '';
+    presentArr.forEach(player => {
+        const row = document.createElement('div');
+        row.className = 'time-row';
+        const dots = segments.map(seg => {
+            const role = seg.goalie === player ? 'G' : seg.field.includes(player) ? 'F' : 'B';
+            return `<div class="dot ${role}">${role}</div>`;
+        }).join('');
+        row.innerHTML = `
+            <span>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span></span>
+            <div class="time-dots">${dots}</div>
+        `;
+        timeSummary.appendChild(row);
+    });
+
+    document.getElementById('rotationCard').classList.remove('hidden');
+
+    // Tracking table
+    const trackBody = document.getElementById('trackBody');
+    trackBody.innerHTML = '';
+    presentArr.forEach(player => {
+        const tr = document.createElement('tr');
+        let cells = `<td>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span></td>`;
+        segments.forEach(seg => {
+            const role = seg.goalie === player ? 'G' : seg.field.includes(player) ? 'F' : 'B';
+            cells += `<td><div class="track-cell" data-s="${role}" onclick="cycleCell(this)">${role}</div></td>`;
+        });
+        tr.innerHTML = cells;
+        trackBody.appendChild(tr);
+    });
+
+    document.getElementById('trackCard').classList.remove('hidden');
+    document.getElementById('rotationCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cycleCell(el) {
+    const states = ['', 'G', 'F', 'B'];
+    const next = states[(states.indexOf(el.dataset.s) + 1) % states.length];
+    el.dataset.s = next;
+    el.textContent = next;
+}
+
+init();
+</script>
+
+</body>
+</html>
