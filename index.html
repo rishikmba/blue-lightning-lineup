@@ -417,6 +417,17 @@
             margin-top: 8px;
             letter-spacing: 0.5px;
         }
+        .info-card {
+            background: var(--yellow-light);
+            border: 1.5px solid var(--yellow);
+            border-radius: 12px;
+            padding: 15px 16px;
+            font-size: 0.9rem;
+            color: #92400e;
+            margin-bottom: 14px;
+            line-height: 1.5;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -439,6 +450,11 @@
         </div>
     </div>
 
+    <!-- ── Too Few Players Info ── -->
+    <div class="info-card" id="fewPlayersInfo">
+        ⚽ With 7 or fewer players, everyone plays the full game — no rotation needed! Just put all players on the field.
+    </div>
+
     <!-- ── Step 2: Goalies ── -->
     <div class="card hidden" id="goalieCard">
         <div class="card-title">Step 2 — Who's Willing to Play Goalie?</div>
@@ -447,7 +463,7 @@
     </div>
 
     <!-- ── Generate ── -->
-    <button class="btn-generate" onclick="generateLineup()">⚡ Build the Lineup</button>
+    <button class="btn-generate hidden" id="buildBtn" onclick="generateLineup()">⚡ Build the Lineup</button>
     <div class="error-box" id="errorBox"></div>
 
     <!-- ── Rotation Output ── -->
@@ -490,7 +506,7 @@
         </div>
     </div>
 
-    <div class="app-version">v1.2.0</div>
+    <div class="app-version">v1.3.0</div>
 
 </main>
 
@@ -573,9 +589,26 @@ function renderPresence() {
 function renderGoalieSection() {
     const card = document.getElementById('goalieCard');
     const list = document.getElementById('goalieList');
+    const infoCard = document.getElementById('fewPlayersInfo');
+    const buildBtn = document.getElementById('buildBtn');
 
-    if (present.size === 0) { card.classList.add('hidden'); return; }
+    if (present.size === 0) {
+        card.classList.add('hidden');
+        infoCard.style.display = 'none';
+        buildBtn.classList.add('hidden');
+        return;
+    }
+
+    if (present.size < 8) {
+        card.classList.add('hidden');
+        infoCard.style.display = 'block';
+        buildBtn.classList.add('hidden');
+        return;
+    }
+
+    infoCard.style.display = 'none';
     card.classList.remove('hidden');
+    buildBtn.classList.remove('hidden');
 
     list.innerHTML = '';
     ROSTER.filter(p => present.has(p.name)).forEach(({ name, num }) => {
@@ -616,15 +649,22 @@ function shuffle(arr) {
 
 function assignGoalies(goalieArr) {
     if (goalieArr.length === 2) {
-        // Halftime switch only — G1 does segs 1&2, G2 does segs 3&4
+        // Halftime switch — G1 covers segs 1&2, G2 covers segs 3&4
         return [goalieArr[0], goalieArr[0], goalieArr[1], goalieArr[1]];
     }
-    // 3+ goalies: round-robin
+    if (goalieArr.length === 3) {
+        // G1,G2,G1,G3 — double-goal gets segs 1&3 (with field break in seg 2)
+        // Shuffle first so the double-goal slot rotates randomly each game
+        const g = shuffle([...goalieArr]);
+        return [g[0], g[1], g[0], g[2]];
+    }
+    // 4+ goalies: round-robin, shuffled for fairness
+    const g = shuffle([...goalieArr]);
     const counts = {};
-    goalieArr.forEach(p => counts[p] = 0);
+    g.forEach(p => counts[p] = 0);
     return [0, 1, 2, 3].map(() => {
-        const pick = [...goalieArr].sort((a, b) =>
-            counts[a] - counts[b] || goalieArr.indexOf(a) - goalieArr.indexOf(b)
+        const pick = [...g].sort((a, b) =>
+            counts[a] - counts[b] || g.indexOf(a) - g.indexOf(b)
         )[0];
         counts[pick]++;
         return pick;
@@ -633,22 +673,23 @@ function assignGoalies(goalieArr) {
 
 function buildLineup(presentArr, goalieArr) {
     const n = presentArr.length;
-    if (n < 6) return { error: `Need at least 6 players — you have ${n}. Ask around!` };
+    if (n < 8) return { error: 'Need at least 8 players for rotation.' };
     if (goalieArr.length === 0) return { error: 'Please toggle at least one player as willing to be goalie.' };
 
     const goalieSegs = assignGoalies(goalieArr);
 
-    // Pre-plan each goalie's guaranteed Field and Bench in their non-goalie segments
+    // Pre-plan each goalie's guaranteed Field and Bench slots
+    // Rule: Field for ALL free segments except the last one, Bench for the last
     const guaranteedField = [new Set(), new Set(), new Set(), new Set()];
     const guaranteedBench = [new Set(), new Set(), new Set(), new Set()];
 
     const uniqueGoalies = [...new Set(goalieArr)];
     uniqueGoalies.forEach(goalie => {
         const freeSegs = [0, 1, 2, 3].filter(i => goalieSegs[i] !== goalie);
-        // First free seg = guaranteed Field, last free seg = guaranteed Bench
-        if (freeSegs.length >= 1) guaranteedField[freeSegs[0]].add(goalie);
-        if (freeSegs.length >= 2) guaranteedBench[freeSegs[freeSegs.length - 1]].add(goalie);
-        // Middle free segs (if any) handled by general pool
+        // Field for all free segs except last
+        freeSegs.slice(0, -1).forEach(seg => guaranteedField[seg].add(goalie));
+        // Bench for last free seg
+        if (freeSegs.length >= 1) guaranteedBench[freeSegs[freeSegs.length - 1]].add(goalie);
     });
 
     // Build segments
@@ -658,22 +699,17 @@ function buildLineup(presentArr, goalieArr) {
     const segments = goalieSegs.map((goalie, i) => {
         plays[goalie]++;
 
-        // Goalies locked into bench or field this segment
         const benchLocked = [...guaranteedBench[i]].filter(p => presentArr.includes(p));
         const fieldLocked = [...guaranteedField[i]].filter(p => presentArr.includes(p));
 
-        // Remaining pool: everyone except goalie, benchLocked, fieldLocked
+        // Everyone else sorted by fewest plays (fair rotation)
         const pool = presentArr
             .filter(p => p !== goalie && !benchLocked.includes(p) && !fieldLocked.includes(p))
             .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
 
-        // Fill 5 field spots: fieldLocked first, then pool
         const remainingFieldSpots = 5 - fieldLocked.length;
-        const poolField = pool.slice(0, remainingFieldSpots);
-        const poolBench = pool.slice(remainingFieldSpots);
-
-        const field = [...fieldLocked, ...poolField];
-        const bench = [...benchLocked, ...poolBench];
+        const field = [...fieldLocked, ...pool.slice(0, remainingFieldSpots)];
+        const bench = [...benchLocked, ...pool.slice(remainingFieldSpots)];
 
         field.forEach(p => plays[p]++);
         return { goalie, field, bench };
