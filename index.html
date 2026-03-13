@@ -369,6 +369,14 @@
         .mt8 { margin-top: 8px; }
         .mt14 { margin-top: 14px; }
         hr.divider { border: none; border-top: 1.5px solid var(--border); margin: 16px 0; }
+
+        .fairness-note {
+            font-size: 0.78rem;
+            color: var(--gray);
+            font-style: italic;
+            margin-bottom: 14px;
+            line-height: 1.45;
+        }
     </style>
 </head>
 <body>
@@ -408,6 +416,7 @@
             <div class="card-title" style="margin-bottom:0">Game Day Lineup</div>
             <span class="plan-badge" id="planBadge"></span>
         </div>
+        <p class="fairness-note" id="fairnessNote"></p>
         <div id="segCards"></div>
 
         <hr class="divider">
@@ -554,6 +563,15 @@ function toggleGoalie(name) {
 
 // ── Algorithm ───────────────────────────────────────────────────────────────
 
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 function assignGoalies(willing) {
     const counts = {};
     willing.forEach(p => counts[p] = 0);
@@ -590,7 +608,7 @@ function buildLineup(presentArr, goalieArr) {
 // ── Render ───────────────────────────────────────────────────────────────────
 
 function generateLineup() {
-    const presentArr = ROSTER.filter(p => present.has(p.name)).map(p => p.name);
+    const presentArr = shuffle(ROSTER.filter(p => present.has(p.name)).map(p => p.name));
     const goalieArr  = ROSTER.filter(p => goalieWilling.has(p.name)).map(p => p.name);
     const result     = buildLineup(presentArr, goalieArr);
 
@@ -606,6 +624,19 @@ function generateLineup() {
 
     const { segments, plays } = result;
     document.getElementById('planBadge').textContent = `${presentArr.length} Players`;
+
+    // Fairness note
+    const noteEl = document.getElementById('fairnessNote');
+    const totalSlots = 6 * 4; // 6 players per segment x 4 segments
+    const n = presentArr.length;
+    if (n > 0 && totalSlots % n !== 0) {
+        const bonus = totalSlots % n;
+        const base = Math.floor(totalSlots / n);
+        noteEl.textContent = `\u26A1 With ${n} players, ${bonus} will play ${base + 1} segments and ${n - bonus} will play ${base} \u2014 who gets the extra segment rotates randomly each game for fairness over the season.`;
+        noteEl.style.display = '';
+    } else {
+        noteEl.style.display = 'none';
+    }
 
     // Segment cards
     const segCards = document.getElementById('segCards');
