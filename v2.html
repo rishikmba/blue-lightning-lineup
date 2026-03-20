@@ -329,9 +329,9 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 0.68rem; font-weight: 700;
         }
-        .dot.G { background: var(--blue-light); color: var(--blue); }
-        .dot.F { background: var(--blue-light); color: var(--blue); }
-        .dot.B { background: var(--gray-light); color: var(--gray); }
+        .dot.G { background: #fef3c7; color: #b45309; border: 1.5px solid #b45309; font-size: 13px; }
+        .dot.F { background: #bfdbfe; color: #1d4ed8; border: 1.5px solid #1d4ed8; font-size: 13px; }
+        .dot.B { background: #f3f4f6; color: #d1d5db; border: 1.5px solid #d1d5db; }
         .dot.planned { opacity: 0.5; border: 1.5px dashed; }
         .dot.planned.G, .dot.planned.F { border-color: var(--blue); }
         .dot.planned.B { border-color: var(--gray); }
@@ -655,7 +655,7 @@
         <div id="endGameSummary"></div>
     </div>
 
-    <div class="app-version">v2.0.4-beta</div>
+    <div class="app-version">v2.1.0-beta</div>
 
 </main>
 
@@ -1197,7 +1197,7 @@ function renderPlayingTimeSummary() {
                 else if (seg.field.includes(player)) role = 'F';
             }
             const planned = (state === 'planned') ? ' planned' : '';
-            dotsHTML += `<div class="dot ${role}${planned}">${role}</div>`;
+            dotsHTML += `<div class="dot ${role}${planned}">${role === 'G' ? '\uD83E\uDD45' : role === 'F' ? '\u26BD' : 'B'}</div>`;
         }
 
         const isHigh = segCounts[player] === uniqueCounts[0] && uniqueCounts.length > 1;
@@ -1556,7 +1556,7 @@ function endGame() {
 
     savedPresentArr.forEach(player => {
         const roles = actualRoles[player] || [];
-        const dotsHTML = roles.map(r => `<div class="dot ${r}">${r}</div>`).join('');
+        const dotsHTML = roles.map(r => `<div class="dot ${r}">${r === 'G' ? '\uD83E\uDD45' : r === 'F' ? '\u26BD' : 'B'}</div>`).join('');
 
         const activeCount = roles.filter(r => r === 'G' || r === 'F').length;
 
