@@ -655,7 +655,7 @@
         <div id="endGameSummary"></div>
     </div>
 
-    <div class="app-version">v2.0.1-beta</div>
+    <div class="app-version">v2.0.2-beta</div>
 
 </main>
 
@@ -1428,6 +1428,9 @@ function advanceSegment() {
     const seg = getSegData(segIdx);
     if (!seg) return;
 
+    // Capture original goalie before subs are applied
+    const originalGoalie = seg.goalie;
+
     // Lock completed segment with actual roles
     const completedSeg = { goalie: seg.goalie, field: [...seg.field], bench: [...seg.bench] };
 
@@ -1446,11 +1449,13 @@ function advanceSegment() {
 
     completedSegments.push(completedSeg);
 
-    // Record actual roles — unavailable players get 'B' (not 'X')
+    // Record actual roles
+    // Goalie who went out mid-seg still gets 'G' (they were in goal)
+    // Field player who went out mid-seg gets 'B' (didn't complete it)
     savedPresentArr.forEach(p => {
-        if (completedSeg.goalie === p) {
+        if (p === originalGoalie || completedSeg.goalie === p) {
             actualRoles[p].push('G');
-        } else if (completedSeg.field.includes(p)) {
+        } else if (seg.field.includes(p) || completedSeg.field.includes(p)) {
             actualRoles[p].push('F');
         } else {
             actualRoles[p].push('B');
