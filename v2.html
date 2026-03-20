@@ -335,8 +335,6 @@
         .dot.planned { opacity: 0.5; border: 1.5px dashed; }
         .dot.planned.G, .dot.planned.F { border-color: var(--blue); }
         .dot.planned.B { border-color: var(--gray); }
-        .dot.X { background: #fee2e2; color: var(--red); }
-
         /* ── Utility ── */
         .hidden { display: none !important; }
         .mt8 { margin-top: 8px; }
@@ -635,17 +633,19 @@
         </div>
         <p class="fairness-note" id="fairnessNote"></p>
         <div id="segCards"></div>
-
-        <hr class="divider">
-        <div class="card-title mt8">Playing Time</div>
-        <div class="card-sub" id="timeSub">Roles across all 4 segments</div>
-        <div id="timeSummary"></div>
     </div>
 
     <!-- ── Game Controls ── -->
     <div class="card hidden" id="gameControlsCard">
         <div class="card-title">Game Controls</div>
         <div id="gameControlsContent"></div>
+    </div>
+
+    <!-- ── Playing Time ── -->
+    <div class="card hidden" id="playingTimeCard">
+        <div class="card-title">Playing Time</div>
+        <div class="card-sub" id="timeSub">Roles across all 4 segments</div>
+        <div id="timeSummary"></div>
     </div>
 
     <!-- ── End Game Summary ── -->
@@ -655,7 +655,7 @@
         <div id="endGameSummary"></div>
     </div>
 
-    <div class="app-version">v2.0.0-beta</div>
+    <div class="app-version">v2.0.1-beta</div>
 
 </main>
 
@@ -697,7 +697,7 @@ let savedPresentArr = [];
 let savedGoalieArr = [];
 let savedTierMap = {};
 let gameEnded = false;
-let returnNextSeg = new Set(); // players returning next segment
+let pendingReturn = new Set(); // players queued to return next segment
 
 function numFor(name) {
     const p = ROSTER.find(r => r.name === name);
@@ -1045,7 +1045,7 @@ function generateLineup() {
     unavailablePlayers = new Set();
     actualRoles = {};
     currentSegSubs = {};
-    returnNextSeg = new Set();
+    pendingReturn = new Set();
     savedPresentArr.forEach(p => actualRoles[p] = []);
 
     document.getElementById('planBadge').textContent = `${savedPresentArr.length} Players`;
@@ -1064,6 +1064,7 @@ function generateLineup() {
     renderPlayingTimeSummary();
 
     document.getElementById('rotationCard').classList.remove('hidden');
+    document.getElementById('playingTimeCard').classList.remove('hidden');
     document.getElementById('endGameCard').classList.add('hidden');
 
     // Show game controls
@@ -1193,10 +1194,8 @@ function renderPlayingTimeSummary() {
                 if (seg.goalie === player) role = 'G';
                 else if (seg.field.includes(player)) role = 'F';
             }
-            // Check if unavailable for this seg
-            if (actualRoles[player] && actualRoles[player][i] === 'X') role = 'X';
             const planned = (state === 'planned') ? ' planned' : '';
-            dotsHTML += `<div class="dot ${role}${planned}">${role === 'X' ? '\u2014' : role}</div>`;
+            dotsHTML += `<div class="dot ${role}${planned}">${role}</div>`;
         }
 
         const isHigh = segCounts[player] === uniqueCounts[0] && uniqueCounts.length > 1;
@@ -1236,7 +1235,7 @@ function renderGameControls() {
     let html = '';
 
     // Status bar
-    html += `<div class="gc-status"><div class="dot-live"></div> SEGMENT ${currentSegment} LIVE &nbsp;\u2014&nbsp; ${SEG_TIMINGS[segIdx]}</div>`;
+    html += `<div class="gc-status"><div class="dot-live"></div> SEGMENT ${currentSegment} LIVE</div>`;
 
     // Sub alerts
     const alertsEl = document.getElementById('subAlerts');
@@ -1289,7 +1288,7 @@ function renderGameControls() {
         html += '<div class="gc-unavailable-section">';
         html += '<div style="font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:6px">OFF (UNAVAILABLE)</div>';
         unavailablePlayers.forEach(p => {
-            const willReturn = returnNextSeg.has(p);
+            const willReturn = pendingReturn.has(p);
             html += `<div class="gc-unavailable-row">
                 <span>${p} #${numFor(p)}${willReturn ? ' <span class="gc-note">(returning next seg)</span>' : ''}</span>
                 <button class="btn-backin" onclick="markBackIn('${p}')">Back In \u2713</button>
@@ -1323,11 +1322,8 @@ function startSegment() {
     gameStarted = true;
     currentSegment = 1;
     currentSegSubs = {};
-    // Apply any returnNextSeg players
-    returnNextSeg.forEach(p => {
-        unavailablePlayers.delete(p);
-    });
-    returnNextSeg = new Set();
+    pendingReturn.forEach(p => unavailablePlayers.delete(p));
+    pendingReturn = new Set();
     renderAllSegmentCards();
     renderPlayingTimeSummary();
     renderGameControls();
@@ -1352,8 +1348,8 @@ function markOut(playerName) {
         const goalieWillingSubs = bench.filter(p => goalieWilling.has(p));
         if (goalieWillingSubs.length > 0) {
             subPlayer = goalieWillingSubs.sort((a, b) => {
-                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B' && r !== 'X').length;
-                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B' && r !== 'X').length;
+                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B').length;
+                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B').length;
                 return aPlayed - bPlayed;
             })[0];
             subAlert = `\u26A1 SUB NOW \u2014 ${playerName} is coming off. \u2192 Send on: ${subPlayer} #${numFor(subPlayer)} as GOALIE`;
@@ -1366,8 +1362,8 @@ function markOut(playerName) {
     } else {
         if (bench.length > 0) {
             subPlayer = bench.sort((a, b) => {
-                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B' && r !== 'X').length;
-                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B' && r !== 'X').length;
+                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B').length;
+                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B').length;
                 return aPlayed - bPlayed;
             })[0];
             subAlert = `\u26A1 SUB NOW \u2014 ${playerName} is coming off. \u2192 Send on: ${subPlayer} #${numFor(subPlayer)}`;
@@ -1404,15 +1400,19 @@ function markOut(playerName) {
 }
 
 function markBackIn(playerName) {
-    if (gameStarted && currentSegment > 0) {
-        // Mid-segment: mark for return next segment
-        returnNextSeg.add(playerName);
-        renderGameControls();
-        // Rebuild for future segments including them
-        // They'll actually rejoin when advanceSegment processes returnNextSeg
-        unavailablePlayers.delete(playerName);
+    if (currentSegment > 0 && gameStarted) {
+        // Mid-segment: queue for next segment, don't remove yet
+        pendingReturn.add(playerName);
+        // Rebuild future segments including them (but keep them unavailable for current)
         rebuildRemainingSegments();
-        unavailablePlayers.add(playerName); // keep them out for current seg display
+        renderAllSegmentCards();
+        renderPlayingTimeSummary();
+        renderGameControls();
+    } else {
+        // Between segments or pre-game: remove immediately
+        unavailablePlayers.delete(playerName);
+        pendingReturn.delete(playerName);
+        rebuildRemainingSegments();
         renderAllSegmentCards();
         renderPlayingTimeSummary();
         renderGameControls();
@@ -1420,6 +1420,10 @@ function markBackIn(playerName) {
 }
 
 function advanceSegment() {
+    // Flush pending returns first
+    pendingReturn.forEach(p => unavailablePlayers.delete(p));
+    pendingReturn = new Set();
+
     const segIdx = currentSegment - 1;
     const seg = getSegData(segIdx);
     if (!seg) return;
@@ -1442,11 +1446,9 @@ function advanceSegment() {
 
     completedSegments.push(completedSeg);
 
-    // Record actual roles
+    // Record actual roles — unavailable players get 'B' (not 'X')
     savedPresentArr.forEach(p => {
-        if (unavailablePlayers.has(p) && !returnNextSeg.has(p)) {
-            actualRoles[p].push('X');
-        } else if (completedSeg.goalie === p) {
+        if (completedSeg.goalie === p) {
             actualRoles[p].push('G');
         } else if (completedSeg.field.includes(p)) {
             actualRoles[p].push('F');
@@ -1457,12 +1459,6 @@ function advanceSegment() {
 
     // Remove from plannedSegments (first one is now completed)
     plannedSegments.shift();
-
-    // Process returnNextSeg
-    returnNextSeg.forEach(p => {
-        unavailablePlayers.delete(p);
-    });
-    returnNextSeg = new Set();
     currentSegSubs = {};
 
     currentSegment++;
@@ -1492,10 +1488,10 @@ function rebuildRemainingSegments() {
     }
 
     const availableArr = shuffle(
-        savedPresentArr.filter(p => !unavailablePlayers.has(p) || returnNextSeg.has(p))
+        savedPresentArr.filter(p => !unavailablePlayers.has(p) || pendingReturn.has(p))
     );
 
-    const availableGoalies = savedGoalieArr.filter(p => !unavailablePlayers.has(p) || returnNextSeg.has(p));
+    const availableGoalies = savedGoalieArr.filter(p => !unavailablePlayers.has(p) || pendingReturn.has(p));
 
     if (availableArr.length < 6) {
         // Show error but don't crash
@@ -1515,7 +1511,7 @@ function rebuildRemainingSegments() {
 
     const tierMap = {};
     availableArr.forEach(p => {
-        const played = (actualRoles[p] || []).filter(r => r !== 'B' && r !== 'X').length;
+        const played = (actualRoles[p] || []).filter(r => r !== 'B').length;
         const originalQuota = availableGoalies.includes(p) ? 3 : (playerTier[p] === 'three' ? 3 : 2);
         tierMap[p] = Math.max(1, originalQuota - played);
     });
@@ -1546,10 +1542,7 @@ function endGame() {
 
     savedPresentArr.forEach(player => {
         const roles = actualRoles[player] || [];
-        const dotsHTML = roles.map(r => {
-            if (r === 'X') return `<div class="dot X">\u2014</div>`;
-            return `<div class="dot ${r}">${r}</div>`;
-        }).join('');
+        const dotsHTML = roles.map(r => `<div class="dot ${r}">${r}</div>`).join('');
 
         const activeCount = roles.filter(r => r === 'G' || r === 'F').length;
 
