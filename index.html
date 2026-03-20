@@ -311,59 +311,6 @@
         .dot.F { background: var(--blue-light); color: var(--blue); }
         .dot.B { background: var(--gray-light); color: var(--gray); }
 
-        /* ── Tracking Table ── */
-        .track-wrap { overflow-x: auto; margin-top: 8px; }
-        table.tracker {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 280px;
-        }
-        table.tracker th {
-            background: var(--blue);
-            color: white;
-            padding: 9px 6px;
-            font-family: 'Bebas Neue', cursive;
-            font-size: 0.95rem;
-            letter-spacing: 1px;
-            text-align: center;
-        }
-        table.tracker th:first-child { text-align: left; padding-left: 12px; }
-        table.tracker td {
-            padding: 9px 4px;
-            border-bottom: 1px solid var(--border);
-            text-align: center;
-        }
-        table.tracker td:first-child {
-            text-align: left;
-            padding-left: 12px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        table.tracker tr:nth-child(even) td { background: var(--gray-light); }
-
-        .track-cell {
-            width: 38px; height: 32px;
-            border: 2px solid var(--border);
-            border-radius: 7px;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 0.8rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.1s;
-            user-select: none;
-        }
-        .track-cell[data-s="G"] { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
-        .track-cell[data-s="F"] { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
-        .track-cell[data-s="B"] { background: var(--yellow-light); color: #b45309; border-color: var(--yellow); }
-
-        .legend {
-            display: flex; gap: 14px; flex-wrap: wrap;
-            margin-top: 10px; font-size: 0.76rem; color: var(--gray);
-        }
-        .legend b { font-weight: 700; }
-
         /* ── Utility ── */
         .hidden { display: none !important; }
         .mt8 { margin-top: 8px; }
@@ -552,32 +499,7 @@
         <div id="timeSummary"></div>
     </div>
 
-    <!-- ── Tracking Sheet ── -->
-    <div class="card hidden" id="trackCard">
-        <div class="card-title">Sideline Tracker</div>
-        <div class="card-sub">Tap a cell to cycle: blank → G → F → B. Pre-filled from the lineup above.</div>
-        <div class="track-wrap">
-            <table class="tracker">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Seg 1</th>
-                        <th>Seg 2</th>
-                        <th>Seg 3</th>
-                        <th>Seg 4</th>
-                    </tr>
-                </thead>
-                <tbody id="trackBody"></tbody>
-            </table>
-        </div>
-        <div class="legend mt8">
-            <div><b style="color:var(--blue)">G</b> = Goalie</div>
-            <div><b style="color:var(--green)">F</b> = Field</div>
-            <div><b style="color:#b45309">B</b> = Bench</div>
-        </div>
-    </div>
-
-    <div class="app-version">v1.4.0</div>
+    <div class="app-version">v1.5.0</div>
 
 </main>
 
@@ -942,7 +864,6 @@ function generateLineup() {
         errBox.textContent = '⚠️ ' + result.error;
         errBox.style.display = 'block';
         document.getElementById('rotationCard').classList.add('hidden');
-        document.getElementById('trackCard').classList.add('hidden');
         return;
     }
     errBox.style.display = 'none';
@@ -1049,30 +970,7 @@ function generateLineup() {
     });
 
     document.getElementById('rotationCard').classList.remove('hidden');
-
-    // Tracking table
-    const trackBody = document.getElementById('trackBody');
-    trackBody.innerHTML = '';
-    presentArr.forEach(player => {
-        const tr = document.createElement('tr');
-        let cells = `<td>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span></td>`;
-        segments.forEach(seg => {
-            const role = seg.goalie === player ? 'G' : seg.field.includes(player) ? 'F' : 'B';
-            cells += `<td><div class="track-cell" data-s="${role}" onclick="cycleCell(this)">${role}</div></td>`;
-        });
-        tr.innerHTML = cells;
-        trackBody.appendChild(tr);
-    });
-
-    document.getElementById('trackCard').classList.remove('hidden');
     document.getElementById('rotationCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function cycleCell(el) {
-    const states = ['', 'G', 'F', 'B'];
-    const next = states[(states.indexOf(el.dataset.s) + 1) % states.length];
-    el.dataset.s = next;
-    el.textContent = next;
 }
 
 init();
