@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>⚽ U8 Lineup Builder — v2 Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green:       #1a3a8a;
+            --green-mid:   #2952c4;
+            --green-light: #e8eeff;
+            --blue:        #1a3a8a;
+            --blue-light:  #e8eeff;
+            --yellow:      #f5c518;
+            --yellow-light:#fffbea;
+            --gray:        #6b7280;
+            --gray-light:  #f3f4f6;
+            --border:      #e5e7eb;
+            --white:       #ffffff;
+            --text:        #111827;
+            --red:         #dc2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: #eef2ee;
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* ── Header ── */
+        header {
+            background: linear-gradient(145deg, #0d2060, #1a3a8a, #2952c4);
+            color: white;
+            padding: 24px 16px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '⚡';
+            position: absolute;
+            font-size: 9rem;
+            opacity: 0.08;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            pointer-events: none;
+            line-height: 1;
+        }
+        header h1 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 2.6rem;
+            letter-spacing: 3px;
+            line-height: 1;
+            position: relative;
+        }
+        .team-name {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.05rem;
+            letter-spacing: 6px;
+            color: var(--yellow);
+            margin-bottom: 6px;
+            position: relative;
+        }
+        header p { font-size: 0.82rem; opacity: 0.75; margin-top: 4px; letter-spacing: 0.5px; position: relative; }
+
+        .proto-banner {
+            background: var(--yellow-light);
+            border-bottom: 1.5px solid var(--yellow);
+            text-align: center;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #92400e;
+        }
+
+        /* ── Main ── */
+        main { padding: 14px; max-width: 580px; margin: 0 auto; }
+
+        /* ── Card ── */
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .card-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.35rem;
+            letter-spacing: 1.5px;
+            color: var(--blue);
+            margin-bottom: 4px;
+        }
+        .card-sub {
+            font-size: 0.78rem;
+            color: var(--gray);
+            margin-bottom: 14px;
+        }
+
+        /* ── Player Grid ── */
+        .player-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 13px 12px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            user-select: none;
+        }
+        .player-card.present {
+            border-color: var(--green-mid);
+            background: var(--blue-light);
+        }
+        .check-circle {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.12s;
+            color: transparent;
+        }
+        .player-card.present .check-circle {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+        .player-name { font-size: 0.97rem; font-weight: 600; }
+        .player-info { display: flex; flex-direction: column; gap: 1px; }
+        .jersey-num { font-size: 0.75rem; color: var(--gray); font-weight: 500; }
+        .player-card.present .jersey-num { color: var(--blue); opacity: 0.8; }
+        .goalie-num { font-size: 0.78rem; color: var(--gray); margin-left: 2px; }
+
+        .counter {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.88rem;
+            color: var(--gray);
+        }
+        .counter strong { color: var(--blue); font-size: 1.1rem; }
+
+        /* ── Goalie List ── */
+        .goalie-list { display: flex; flex-direction: column; gap: 8px; }
+        .goalie-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s;
+        }
+        .goalie-item.on { border-color: var(--blue); background: var(--blue-light); }
+        .goalie-left { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.97rem; }
+
+        .toggle-track {
+            width: 44px; height: 26px;
+            border-radius: 13px;
+            background: var(--border);
+            position: relative;
+            transition: background 0.18s;
+            flex-shrink: 0;
+        }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 3px; left: 3px;
+            transition: transform 0.18s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .goalie-item.on .toggle-track { background: var(--blue); }
+        .goalie-item.on .toggle-track::after { transform: translateX(18px); }
+
+        /* ── Button ── */
+        .btn-generate {
+            width: 100%;
+            padding: 18px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 14px rgba(26,58,138,0.35);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-generate:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(26,58,138,0.25); }
+
+        /* ── Error ── */
+        .error-box {
+            background: #fee2e2;
+            border: 1.5px solid #fca5a5;
+            color: var(--red);
+            border-radius: 12px;
+            padding: 13px 15px;
+            font-size: 0.9rem;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        /* ── Segment Cards ── */
+        .plan-badge {
+            display: inline-block;
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 20px;
+            padding: 4px 13px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .rotation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .seg-card {
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .seg-head {
+            background: var(--blue);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .seg-head.completed { background: var(--gray); }
+        .seg-head.live { background: #16a34a; }
+        .seg-label {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+        }
+        .seg-timing { font-size: 0.73rem; opacity: 0.82; }
+        .seg-status-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+        }
+        .seg-status-badge.completed-badge { background: rgba(255,255,255,0.25); }
+        .seg-status-badge.live-badge { background: rgba(255,255,255,0.3); }
+        .seg-status-badge.planned-badge { background: rgba(255,255,255,0.2); font-weight: 600; }
+
+        .seg-body {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+        }
+        .seg-col { padding: 12px 13px; }
+        .seg-col.goalie-col {
+            background: var(--blue-light);
+            border-right: 1.5px solid var(--border);
+        }
+        .col-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+        .goalie-name-big {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--blue);
+        }
+        .chip-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+        .chip {
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.83rem;
+            font-weight: 600;
+        }
+        .bench-bar {
+            padding: 7px 13px;
+            background: var(--gray-light);
+            border-top: 1.5px solid var(--border);
+            font-size: 0.83rem;
+            color: var(--gray);
+        }
+        .bench-bar strong { font-weight: 700; margin-right: 4px; }
+
+        /* ── Playing Time Summary ── */
+        .time-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .time-row:last-child { border-bottom: none; }
+        .time-dots { display: flex; gap: 4px; }
+        .dot {
+            width: 28px; height: 24px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.68rem; font-weight: 700;
+        }
+        .dot.G { background: var(--blue-light); color: var(--blue); }
+        .dot.F { background: var(--blue-light); color: var(--blue); }
+        .dot.B { background: var(--gray-light); color: var(--gray); }
+        .dot.planned { opacity: 0.5; border: 1.5px dashed; }
+        .dot.planned.G, .dot.planned.F { border-color: var(--blue); }
+        .dot.planned.B { border-color: var(--gray); }
+        .dot.X { background: #fee2e2; color: var(--red); }
+
+        /* ── Utility ── */
+        .hidden { display: none !important; }
+        .mt8 { margin-top: 8px; }
+        .mt14 { margin-top: 14px; }
+        hr.divider { border: none; border-top: 1.5px solid var(--border); margin: 16px 0; }
+
+        .fairness-note {
+            font-size: 0.78rem;
+            color: var(--gray);
+            font-style: italic;
+            margin-bottom: 14px;
+            line-height: 1.45;
+        }
+
+        .seg-badge-high {
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 10px;
+            padding: 2px 8px;
+            margin-left: 6px;
+        }
+        .seg-badge-low {
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: var(--gray-light);
+            color: var(--gray);
+            border-radius: 10px;
+            padding: 2px 8px;
+            margin-left: 6px;
+        }
+        .time-breakdown {
+            font-size: 0.82rem;
+            color: var(--gray);
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .time-breakdown .hi { color: var(--blue); font-weight: 700; }
+        .time-group-divider {
+            border: none;
+            border-top: 1.5px dashed var(--border);
+            margin: 4px 0;
+        }
+        .app-version {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #adb5bd;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+        .info-card {
+            background: var(--yellow-light);
+            border: 1.5px solid var(--yellow);
+            border-radius: 12px;
+            padding: 15px 16px;
+            font-size: 0.9rem;
+            color: #92400e;
+            margin-bottom: 14px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        /* ── Tier Assignment (Step 3) ── */
+        .tier-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .tier-col-header {
+            padding: 8px 12px;
+            border-radius: 10px 10px 0 0;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        .tier-col-header.blue-header { background: var(--blue); color: white; }
+        .tier-col-header.amber-header { background: var(--yellow); color: #78350f; }
+        .tier-col-list {
+            border: 1.5px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            min-height: 60px;
+            padding: 6px;
+        }
+        .tier-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background 0.1s;
+        }
+        .tier-player:last-child { margin-bottom: 0; }
+        .tier-player:hover { background: var(--gray-light); }
+        .tier-player.locked {
+            cursor: default;
+            opacity: 0.7;
+        }
+        .tier-player.locked:hover { background: transparent; }
+        .tier-player .goalie-tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--gray);
+        }
+        .tier-counter {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.82rem;
+            color: var(--gray);
+        }
+        .tier-counter strong { color: var(--blue); }
+        .tier-prompt {
+            text-align: center;
+            font-size: 0.82rem;
+            color: #b45309;
+            margin-top: 8px;
+        }
+
+        /* ── Game Controls ── */
+        .gc-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .gc-status .dot-live {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .gc-player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+        .gc-player-row:last-child { border-bottom: none; }
+        .gc-player-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .gc-role-tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+        .gc-role-tag.goalie { background: var(--blue-light); color: var(--blue); }
+        .gc-role-tag.field { background: var(--blue-light); color: var(--blue); }
+        .btn-out {
+            background: #fee2e2;
+            color: var(--red);
+            border: 1.5px solid #fca5a5;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-out:active { opacity: 0.7; }
+        .btn-backin {
+            background: #dcfce7;
+            color: #166534;
+            border: 1.5px solid #86efac;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-backin:active { opacity: 0.7; }
+        .sub-alert {
+            background: var(--yellow-light);
+            border: 1.5px solid var(--yellow);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            color: #92400e;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .sub-alert strong { color: #78350f; }
+        .gc-bench-list {
+            font-size: 0.82rem;
+            color: var(--gray);
+            padding: 8px 0;
+        }
+        .gc-unavailable-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1.5px dashed var(--border);
+        }
+        .gc-unavailable-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        .gc-note {
+            font-size: 0.78rem;
+            color: #b45309;
+            font-style: italic;
+            margin-top: 4px;
+        }
+        .btn-end-game {
+            background: #16a34a;
+        }
+        .final-total {
+            font-size: 0.88rem;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+        .final-total:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="team-name">⚡ Blue Lightning ⚡</div>
+    <h1>⚽ Lineup Builder</h1>
+    <p>Coach Williams &nbsp;·&nbsp; Coach Kumar &nbsp;·&nbsp; Boys U8</p>
+</header>
+
+<div class="proto-banner">🧪 v2 PROTOTYPE — Live Game Controls</div>
+
+<main>
+
+    <!-- ── Step 1: Attendance ── -->
+    <div class="card">
+        <div class="card-title">Step 1 — Who's Here Today?</div>
+        <div class="card-sub">Tap each player to mark them present</div>
+        <div class="player-grid" id="playerGrid"></div>
+        <div class="counter mt8">
+            <strong id="presentCount">0</strong> players ready
+        </div>
+    </div>
+
+    <!-- ── Too Few Players Info ── -->
+    <div class="info-card" id="fewPlayersInfo">
+        ⚽ With 7 or fewer players, everyone plays the full game — no rotation needed! Just put all players on the field.
+    </div>
+
+    <!-- ── Step 2: Goalies ── -->
+    <div class="card hidden" id="goalieCard">
+        <div class="card-title">Step 2 — Who's Willing to Play Goalie?</div>
+        <div class="card-sub">Toggle anyone who's up for it today — ask around before the game!</div>
+        <div class="goalie-list" id="goalieList"></div>
+    </div>
+
+    <!-- ── Step 3: Tier Assignment ── -->
+    <div class="card hidden" id="tierCard">
+        <div class="card-title">Step 3 — Who Earns More Playing Time?</div>
+        <div class="card-sub">Choose which players earn an extra segment today</div>
+        <div id="tierContent"></div>
+        <div class="tier-counter" id="tierCounter"></div>
+        <div class="tier-prompt" id="tierPrompt"></div>
+    </div>
+
+    <!-- ── Generate ── -->
+    <button class="btn-generate hidden" id="buildBtn" onclick="generateLineup()">⚡ Build the Lineup</button>
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- ── Rotation Output ── -->
+    <div class="card hidden" id="rotationCard">
+        <div class="rotation-header">
+            <div class="card-title" style="margin-bottom:0">Game Day Lineup</div>
+            <span class="plan-badge" id="planBadge"></span>
+        </div>
+        <p class="fairness-note" id="fairnessNote"></p>
+        <div id="segCards"></div>
+
+        <hr class="divider">
+        <div class="card-title mt8">Playing Time</div>
+        <div class="card-sub" id="timeSub">Roles across all 4 segments</div>
+        <div id="timeSummary"></div>
+    </div>
+
+    <!-- ── Game Controls ── -->
+    <div class="card hidden" id="gameControlsCard">
+        <div class="card-title">Game Controls</div>
+        <div id="gameControlsContent"></div>
+    </div>
+
+    <!-- ── End Game Summary ── -->
+    <div class="card hidden" id="endGameCard">
+        <div class="card-title">🏁 Final Playing Time</div>
+        <div class="card-sub">Actual roles for each player</div>
+        <div id="endGameSummary"></div>
+    </div>
+
+    <div class="app-version">v2.0.0-beta</div>
+
+</main>
+
+<script>
+const ROSTER = [
+    { name: "Ben",     num: "?"  },
+    { name: "Braden",  num: "5"  },
+    { name: "Brooks",  num: "10" },
+    { name: "Emilio",  num: "3"  },
+    { name: "Ethan",   num: "7"  },
+    { name: "Jaxon",   num: "2"  },
+    { name: "Krish",   num: "9"  },
+    { name: "Liam",    num: "8"  },
+    { name: "Lorenzo", num: "6"  },
+    { name: "Maxi",    num: "4"  },
+];
+
+const SEG_TIMINGS = [
+    "Start \u2192 1st Water Break",
+    "1st Water Break \u2192 Halftime",
+    "Halftime \u2192 2nd Water Break",
+    "2nd Water Break \u2192 End"
+];
+
+let present       = new Set();
+let goalieWilling = new Set();
+let playerTier    = {};
+
+// Game state
+let gameStarted = false;
+let currentSegment = 0;       // 0 = not started, 1-4 = live segment
+let completedSegments = [];   // locked {goalie, field, bench}
+let plannedSegments = [];     // remaining planned segments
+let allSegments = [];         // initial full plan from generateLineup
+let unavailablePlayers = new Set();
+let actualRoles = {};         // { name: ['G','F','B','B'] }
+let currentSegSubs = {};      // mid-segment subs: { outPlayer: inPlayer }
+let savedPresentArr = [];
+let savedGoalieArr = [];
+let savedTierMap = {};
+let gameEnded = false;
+let returnNextSeg = new Set(); // players returning next segment
+
+function numFor(name) {
+    const p = ROSTER.find(r => r.name === name);
+    return p ? p.num : '?';
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+
+function init() {
+    const grid = document.getElementById('playerGrid');
+    ROSTER.forEach(({ name, num }) => {
+        const el = document.createElement('div');
+        el.className = 'player-card';
+        el.id = 'pc-' + name;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-pressed', 'false');
+        el.onclick = () => togglePresent(name);
+        el.innerHTML = `
+            <div class="check-circle" id="cc-${name}">\u2713</div>
+            <div class="player-info">
+                <span class="player-name">${name}</span>
+                <span class="jersey-num">#${num}</span>
+            </div>
+        `;
+        grid.appendChild(el);
+    });
+}
+
+function togglePresent(name) {
+    if (gameStarted) return;
+    if (present.has(name)) {
+        present.delete(name);
+        goalieWilling.delete(name);
+    } else {
+        present.add(name);
+    }
+    renderPresence();
+    renderGoalieSection();
+}
+
+function renderPresence() {
+    ROSTER.forEach(({ name }) => {
+        const card = document.getElementById('pc-' + name);
+        if (present.has(name)) {
+            card.classList.add('present');
+            card.setAttribute('aria-pressed', 'true');
+        } else {
+            card.classList.remove('present');
+            card.setAttribute('aria-pressed', 'false');
+        }
+    });
+    document.getElementById('presentCount').textContent = present.size;
+}
+
+function renderGoalieSection() {
+    const card = document.getElementById('goalieCard');
+    const list = document.getElementById('goalieList');
+    const infoCard = document.getElementById('fewPlayersInfo');
+    const tierCard = document.getElementById('tierCard');
+    const buildBtn = document.getElementById('buildBtn');
+
+    if (present.size === 0) {
+        card.classList.add('hidden');
+        tierCard.classList.add('hidden');
+        infoCard.style.display = 'none';
+        buildBtn.classList.add('hidden');
+        return;
+    }
+
+    if (present.size < 8) {
+        card.classList.add('hidden');
+        tierCard.classList.add('hidden');
+        infoCard.style.display = 'block';
+        buildBtn.classList.add('hidden');
+        return;
+    }
+
+    infoCard.style.display = 'none';
+    card.classList.remove('hidden');
+
+    list.innerHTML = '';
+    ROSTER.filter(p => present.has(p.name)).forEach(({ name, num }) => {
+        const on = goalieWilling.has(name);
+        const el = document.createElement('div');
+        el.className = 'goalie-item' + (on ? ' on' : '');
+        el.id = 'gi-' + name;
+        el.onclick = () => toggleGoalie(name);
+        el.innerHTML = `
+            <div class="goalie-left">
+                <span>\uD83E\uDD45</span>
+                <span>${name}</span>
+                <span class="goalie-num">#${num}</span>
+            </div>
+            <div class="toggle-track"></div>
+        `;
+        list.appendChild(el);
+    });
+
+    renderTierSection();
+}
+
+function toggleGoalie(name) {
+    if (gameStarted) return;
+    if (goalieWilling.has(name)) goalieWilling.delete(name);
+    else goalieWilling.add(name);
+    const el = document.getElementById('gi-' + name);
+    if (el) el.classList.toggle('on', goalieWilling.has(name));
+    renderTierSection();
+}
+
+function getTierCounts(n) {
+    return {
+        threes: 24 - 2 * n,
+        twos: 3 * n - 24
+    };
+}
+
+function renderTierSection() {
+    const tierCard = document.getElementById('tierCard');
+    const tierContent = document.getElementById('tierContent');
+    const tierCounter = document.getElementById('tierCounter');
+    const tierPrompt = document.getElementById('tierPrompt');
+    const buildBtn = document.getElementById('buildBtn');
+    const n = present.size;
+
+    if (n < 8) {
+        tierCard.classList.add('hidden');
+        buildBtn.classList.add('hidden');
+        return;
+    }
+
+    if (n === 8) {
+        tierCard.classList.add('hidden');
+        playerTier = {};
+        ROSTER.filter(p => present.has(p.name)).forEach(p => playerTier[p.name] = 'three');
+        buildBtn.classList.remove('hidden');
+        return;
+    }
+
+    const { threes, twos } = getTierCounts(n);
+    const goalies = ROSTER.filter(p => present.has(p.name) && goalieWilling.has(p.name)).map(p => p.name);
+    const nonGoalies = ROSTER.filter(p => present.has(p.name) && !goalieWilling.has(p.name)).map(p => p.name);
+    const goalieSlotsTaken = Math.min(goalies.length, threes);
+    const openSlots = Math.max(0, threes - goalieSlotsTaken);
+
+    const newTier = {};
+    goalies.forEach(name => newTier[name] = 'three');
+
+    let assignedThrees = 0;
+    nonGoalies.forEach(name => {
+        if (playerTier[name] === 'three' && assignedThrees < openSlots) {
+            newTier[name] = 'three';
+            assignedThrees++;
+        } else {
+            newTier[name] = 'two';
+        }
+    });
+    playerTier = newTier;
+
+    tierCard.classList.remove('hidden');
+
+    if (openSlots === 0) {
+        tierContent.innerHTML = `<div class="info-card" style="display:block">All playing-time spots are filled by today's goalies. All other players will each play 2 segments.</div>`;
+        tierCounter.innerHTML = '';
+        tierPrompt.innerHTML = '';
+        buildBtn.classList.remove('hidden');
+        return;
+    }
+
+    const threePlayers = nonGoalies.filter(name => playerTier[name] === 'three');
+    const twoPlayers = nonGoalies.filter(name => playerTier[name] === 'two');
+    const filled = threePlayers.length;
+
+    let threeListHTML = '';
+    goalies.forEach(name => {
+        threeListHTML += `<div class="tier-player locked"><span>\uD83E\uDD45</span> ${name} <span class="goalie-tag">Goalie</span></div>`;
+    });
+    threePlayers.forEach(name => {
+        threeListHTML += `<div class="tier-player" onclick="toggleTier('${name}')">${name} <span style="color:var(--gray);font-size:0.8em">#${numFor(name)}</span></div>`;
+    });
+
+    let twoListHTML = '';
+    twoPlayers.forEach(name => {
+        twoListHTML += `<div class="tier-player" onclick="toggleTier('${name}')">${name} <span style="color:var(--gray);font-size:0.8em">#${numFor(name)}</span></div>`;
+    });
+
+    tierContent.innerHTML = `
+        <div class="tier-columns">
+            <div>
+                <div class="tier-col-header blue-header">\u2B50 3 Segments (${threes} spots)</div>
+                <div class="tier-col-list">${threeListHTML || '<div style="padding:10px;color:var(--gray);font-size:0.82rem;text-align:center">Tap players to add</div>'}</div>
+            </div>
+            <div>
+                <div class="tier-col-header amber-header">2 Segments (${twos} spots)</div>
+                <div class="tier-col-list">${twoListHTML || '<div style="padding:10px;color:var(--gray);font-size:0.82rem;text-align:center">\u2014</div>'}</div>
+            </div>
+        </div>
+    `;
+
+    tierCounter.innerHTML = `<strong>${filled}</strong> of <strong>${openSlots}</strong> spots filled`;
+
+    if (filled < openSlots) {
+        const remaining = openSlots - filled;
+        tierPrompt.textContent = `Assign ${remaining} more player${remaining !== 1 ? 's' : ''} to 3 segments to continue.`;
+        buildBtn.classList.add('hidden');
+    } else {
+        tierPrompt.textContent = '';
+        buildBtn.classList.remove('hidden');
+    }
+}
+
+function toggleTier(name) {
+    if (goalieWilling.has(name)) return;
+    const { threes } = getTierCounts(present.size);
+    const goalies = ROSTER.filter(p => present.has(p.name) && goalieWilling.has(p.name)).map(p => p.name);
+    const openSlots = Math.max(0, threes - goalies.length);
+    const currentThrees = Object.values(playerTier).filter(v => v === 'three').length - goalies.length;
+
+    if (playerTier[name] === 'three') {
+        playerTier[name] = 'two';
+    } else if (currentThrees < openSlots) {
+        playerTier[name] = 'three';
+    }
+    renderTierSection();
+}
+
+// ── Algorithm ───────────────────────────────────────────────────────────────
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function assignGoalies(goalieArr, segCount) {
+    segCount = segCount || 4;
+    if (goalieArr.length === 0) return Array(segCount).fill(null);
+    if (segCount <= 0) return [];
+
+    if (segCount === 4) {
+        if (goalieArr.length === 2) {
+            return [goalieArr[0], goalieArr[0], goalieArr[1], goalieArr[1]];
+        }
+        if (goalieArr.length === 3) {
+            const g = shuffle([...goalieArr]);
+            return [g[0], g[1], g[0], g[2]];
+        }
+    }
+
+    const g = shuffle([...goalieArr]);
+    const counts = {};
+    g.forEach(p => counts[p] = 0);
+    return Array(segCount).fill(0).map(() => {
+        const pick = [...g].sort((a, b) =>
+            counts[a] - counts[b] || g.indexOf(a) - g.indexOf(b)
+        )[0];
+        counts[pick]++;
+        return pick;
+    });
+}
+
+function buildLineup(presentArr, goalieArr, tierMap, segCount) {
+    segCount = segCount || 4;
+    const n = presentArr.length;
+    if (n < 6) return { error: `Only ${n} players available \u2014 need at least 6.` };
+    if (goalieArr.length === 0) return { error: 'Please toggle at least one player as willing to be goalie.' };
+
+    const goalieSegs = assignGoalies(goalieArr, segCount);
+
+    const guaranteedField = Array.from({length: segCount}, () => new Set());
+    const guaranteedBench = Array.from({length: segCount}, () => new Set());
+
+    const uniqueGoalies = [...new Set(goalieArr)];
+    uniqueGoalies.forEach(goalie => {
+        const freeSegs = [];
+        for (let i = 0; i < segCount; i++) {
+            if (goalieSegs[i] !== goalie) freeSegs.push(i);
+        }
+        freeSegs.slice(0, -1).forEach(seg => guaranteedField[seg].add(goalie));
+        if (freeSegs.length >= 1) guaranteedBench[freeSegs[freeSegs.length - 1]].add(goalie);
+    });
+
+    const plays = {};
+    presentArr.forEach(p => plays[p] = 0);
+
+    const segments = goalieSegs.map((goalie, i) => {
+        plays[goalie]++;
+
+        const benchLocked = [...guaranteedBench[i]].filter(p => presentArr.includes(p));
+        const fieldLocked = [...guaranteedField[i]].filter(p => presentArr.includes(p));
+
+        const quotaBench = presentArr.filter(p =>
+            p !== goalie &&
+            !benchLocked.includes(p) &&
+            !fieldLocked.includes(p) &&
+            plays[p] >= tierMap[p]
+        );
+
+        const pool = presentArr
+            .filter(p => p !== goalie && !benchLocked.includes(p) && !fieldLocked.includes(p) && plays[p] < tierMap[p])
+            .sort((a, b) => plays[a] - plays[b] || presentArr.indexOf(a) - presentArr.indexOf(b));
+
+        const remainingFieldSpots = 5 - fieldLocked.length;
+        const field = [...fieldLocked, ...pool.slice(0, remainingFieldSpots)];
+        const bench = [...benchLocked, ...quotaBench, ...pool.slice(remainingFieldSpots)];
+
+        field.forEach(p => plays[p]++);
+        return { goalie, field, bench };
+    });
+
+    return { segments, plays };
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function generateLineup() {
+    savedPresentArr = shuffle(ROSTER.filter(p => present.has(p.name)).map(p => p.name));
+    savedGoalieArr = ROSTER.filter(p => goalieWilling.has(p.name)).map(p => p.name);
+
+    savedTierMap = {};
+    savedPresentArr.forEach(p => {
+        savedTierMap[p] = savedGoalieArr.includes(p) ? 3 : (playerTier[p] === 'three' ? 3 : 2);
+    });
+
+    const result = buildLineup(savedPresentArr, savedGoalieArr, savedTierMap);
+
+    const errBox = document.getElementById('errorBox');
+    if (result.error) {
+        errBox.textContent = '\u26A0\uFE0F ' + result.error;
+        errBox.style.display = 'block';
+        document.getElementById('rotationCard').classList.add('hidden');
+        return;
+    }
+    errBox.style.display = 'none';
+
+    allSegments = result.segments;
+    plannedSegments = [...allSegments];
+    completedSegments = [];
+    currentSegment = 0;
+    gameStarted = false;
+    gameEnded = false;
+    unavailablePlayers = new Set();
+    actualRoles = {};
+    currentSegSubs = {};
+    returnNextSeg = new Set();
+    savedPresentArr.forEach(p => actualRoles[p] = []);
+
+    document.getElementById('planBadge').textContent = `${savedPresentArr.length} Players`;
+
+    const noteEl = document.getElementById('fairnessNote');
+    const n = savedPresentArr.length;
+    if (n > 8) {
+        const { threes, twos } = getTierCounts(n);
+        noteEl.textContent = `\u26A1 ${threes} players will play 3 segments and ${twos} will play 2 \u2014 assigned by coach in Step 3.`;
+        noteEl.style.display = '';
+    } else {
+        noteEl.style.display = 'none';
+    }
+
+    renderAllSegmentCards();
+    renderPlayingTimeSummary();
+
+    document.getElementById('rotationCard').classList.remove('hidden');
+    document.getElementById('endGameCard').classList.add('hidden');
+
+    // Show game controls
+    document.getElementById('gameControlsCard').classList.remove('hidden');
+    renderGameControls();
+
+    document.getElementById('rotationCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function getSegState(segIndex) {
+    // segIndex is 0-based
+    if (segIndex < completedSegments.length) return 'completed';
+    if (gameStarted && segIndex === currentSegment - 1) return 'live';
+    return 'planned';
+}
+
+function getSegData(segIndex) {
+    if (segIndex < completedSegments.length) return completedSegments[segIndex];
+    const plannedIdx = segIndex - completedSegments.length;
+    if (plannedIdx >= 0 && plannedIdx < plannedSegments.length) return plannedSegments[plannedIdx];
+    return null;
+}
+
+function renderAllSegmentCards() {
+    const segCards = document.getElementById('segCards');
+    segCards.innerHTML = '';
+
+    for (let i = 0; i < 4; i++) {
+        const seg = getSegData(i);
+        if (!seg) continue;
+        const state = getSegState(i);
+
+        let headClass = 'seg-head';
+        let badgeHTML = '';
+        if (state === 'completed') {
+            headClass += ' completed';
+            badgeHTML = '<span class="seg-status-badge completed-badge">\u2705 Completed</span>';
+        } else if (state === 'live') {
+            headClass += ' live';
+            badgeHTML = '<span class="seg-status-badge live-badge">\uD83D\uDFE2 Live</span>';
+        } else {
+            badgeHTML = '<span class="seg-status-badge planned-badge">Planned</span>';
+        }
+
+        const benchHTML = seg.bench.length
+            ? `<div class="bench-bar"><strong>Bench:</strong> ${seg.bench.map(p => `${p} <span style="opacity:0.6">#${numFor(p)}</span>`).join(', ')}</div>`
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'seg-card';
+        card.innerHTML = `
+            <div class="${headClass}">
+                <span class="seg-label">Segment ${i+1}</span>
+                <span>${badgeHTML} <span class="seg-timing">${SEG_TIMINGS[i]}</span></span>
+            </div>
+            <div class="seg-body">
+                <div class="seg-col goalie-col">
+                    <div class="col-label">\uD83E\uDD45 Goalie</div>
+                    <div class="goalie-name-big">${seg.goalie}</div>
+                    <div style="font-size:0.75rem;color:var(--gray);margin-top:2px">#${numFor(seg.goalie)}</div>
+                </div>
+                <div class="seg-col">
+                    <div class="col-label">\u26BD Field Players</div>
+                    <div class="chip-wrap">
+                        ${seg.field.map(p => `<span class="chip">${p} <span style="opacity:0.65;font-size:0.75em">#${numFor(p)}</span></span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            ${benchHTML}
+        `;
+        segCards.appendChild(card);
+    }
+}
+
+function renderPlayingTimeSummary() {
+    const timeSummary = document.getElementById('timeSummary');
+    timeSummary.innerHTML = '';
+
+    const allPlayers = savedPresentArr;
+    const segCounts = {};
+
+    allPlayers.forEach(player => {
+        let count = 0;
+        for (let i = 0; i < 4; i++) {
+            const seg = getSegData(i);
+            if (!seg) continue;
+            if (seg.goalie === player || seg.field.includes(player)) count++;
+        }
+        segCounts[player] = count;
+    });
+
+    const sortedPlayers = [...allPlayers].sort((a, b) => segCounts[b] - segCounts[a]);
+    const uniqueCounts = [...new Set(Object.values(segCounts))].sort((a, b) => b - a);
+
+    if (uniqueCounts.length > 1) {
+        const breakdownEl = document.createElement('div');
+        breakdownEl.className = 'time-breakdown';
+        uniqueCounts.forEach(c => {
+            const count = sortedPlayers.filter(p => segCounts[p] === c).length;
+            const cls = c === uniqueCounts[0] ? 'hi' : '';
+            const span = document.createElement('span');
+            span.className = cls;
+            span.textContent = `${count} player${count !== 1 ? 's' : ''} \u00B7 ${c} segment${c !== 1 ? 's' : ''}`;
+            breakdownEl.appendChild(span);
+        });
+        timeSummary.appendChild(breakdownEl);
+    }
+
+    let lastCount = null;
+    sortedPlayers.forEach(player => {
+        if (lastCount !== null && segCounts[player] !== lastCount) {
+            const hr = document.createElement('hr');
+            hr.className = 'time-group-divider';
+            timeSummary.appendChild(hr);
+        }
+        lastCount = segCounts[player];
+
+        const row = document.createElement('div');
+        row.className = 'time-row';
+
+        let dotsHTML = '';
+        for (let i = 0; i < 4; i++) {
+            const seg = getSegData(i);
+            const state = getSegState(i);
+            let role = 'B';
+            if (seg) {
+                if (seg.goalie === player) role = 'G';
+                else if (seg.field.includes(player)) role = 'F';
+            }
+            // Check if unavailable for this seg
+            if (actualRoles[player] && actualRoles[player][i] === 'X') role = 'X';
+            const planned = (state === 'planned') ? ' planned' : '';
+            dotsHTML += `<div class="dot ${role}${planned}">${role === 'X' ? '\u2014' : role}</div>`;
+        }
+
+        const isHigh = segCounts[player] === uniqueCounts[0] && uniqueCounts.length > 1;
+        const badgeClass = isHigh ? 'seg-badge-high' : 'seg-badge-low';
+        const badgeText = `${segCounts[player]} seg${segCounts[player] !== 1 ? 's' : ''}`;
+        const unavailTag = unavailablePlayers.has(player) ? ' <span style="color:var(--red);font-size:0.72rem">OUT</span>' : '';
+
+        row.innerHTML = `
+            <span>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span>${unavailTag}<span class="${badgeClass}">${badgeText}</span></span>
+            <div class="time-dots">${dotsHTML}</div>
+        `;
+        timeSummary.appendChild(row);
+    });
+}
+
+// ── Game Controls ────────────────────────────────────────────────────────────
+
+function renderGameControls() {
+    const content = document.getElementById('gameControlsContent');
+
+    if (gameEnded) {
+        content.innerHTML = '<div style="text-align:center;color:var(--gray);padding:10px">Game complete! See final summary below.</div>';
+        return;
+    }
+
+    if (!gameStarted) {
+        content.innerHTML = `
+            <button class="btn-generate" onclick="startSegment()" style="margin-bottom:0">\u25B6 Start Segment 1</button>
+        `;
+        return;
+    }
+
+    const segIdx = currentSegment - 1;
+    const seg = getSegData(segIdx);
+    if (!seg) return;
+
+    let html = '';
+
+    // Status bar
+    html += `<div class="gc-status"><div class="dot-live"></div> SEGMENT ${currentSegment} LIVE &nbsp;\u2014&nbsp; ${SEG_TIMINGS[segIdx]}</div>`;
+
+    // Sub alerts
+    const alertsEl = document.getElementById('subAlerts');
+    // We'll render them inline
+
+    // Active players
+    html += '<div style="margin-bottom:8px">';
+
+    // Goalie
+    const isGoalieOut = unavailablePlayers.has(seg.goalie);
+    const goalieSub = currentSegSubs[seg.goalie];
+    if (goalieSub) {
+        html += `<div class="gc-player-row">
+            <div class="gc-player-left">${goalieSub} <span style="color:var(--gray);font-size:0.8em">#${numFor(goalieSub)}</span> <span class="gc-role-tag goalie">\uD83E\uDD45 Goalie (sub)</span></div>
+            <button class="btn-out" onclick="markOut('${goalieSub}')">Out \u26A0</button>
+        </div>`;
+    } else if (!isGoalieOut) {
+        html += `<div class="gc-player-row">
+            <div class="gc-player-left">${seg.goalie} <span style="color:var(--gray);font-size:0.8em">#${numFor(seg.goalie)}</span> <span class="gc-role-tag goalie">\uD83E\uDD45 Goalie</span></div>
+            <button class="btn-out" onclick="markOut('${seg.goalie}')">Out \u26A0</button>
+        </div>`;
+    }
+
+    // Field players
+    seg.field.forEach(p => {
+        const isOut = unavailablePlayers.has(p);
+        const sub = currentSegSubs[p];
+        if (sub) {
+            html += `<div class="gc-player-row">
+                <div class="gc-player-left">${sub} <span style="color:var(--gray);font-size:0.8em">#${numFor(sub)}</span> <span class="gc-role-tag field">\u26BD Field (sub)</span></div>
+                <button class="btn-out" onclick="markOut('${sub}')">Out \u26A0</button>
+            </div>`;
+        } else if (!isOut) {
+            html += `<div class="gc-player-row">
+                <div class="gc-player-left">${p} <span style="color:var(--gray);font-size:0.8em">#${numFor(p)}</span> <span class="gc-role-tag field">\u26BD Field</span></div>
+                <button class="btn-out" onclick="markOut('${p}')">Out \u26A0</button>
+            </div>`;
+        }
+    });
+    html += '</div>';
+
+    // Bench
+    const currentBench = getCurrentBench();
+    if (currentBench.length > 0) {
+        html += `<div class="gc-bench-list"><strong>On bench:</strong> ${currentBench.map(p => `${p} #${numFor(p)}`).join(', ')}</div>`;
+    }
+
+    // Unavailable players
+    if (unavailablePlayers.size > 0) {
+        html += '<div class="gc-unavailable-section">';
+        html += '<div style="font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:6px">OFF (UNAVAILABLE)</div>';
+        unavailablePlayers.forEach(p => {
+            const willReturn = returnNextSeg.has(p);
+            html += `<div class="gc-unavailable-row">
+                <span>${p} #${numFor(p)}${willReturn ? ' <span class="gc-note">(returning next seg)</span>' : ''}</span>
+                <button class="btn-backin" onclick="markBackIn('${p}')">Back In \u2713</button>
+            </div>`;
+        });
+        html += '</div>';
+    }
+
+    // Advance button
+    html += '<div style="margin-top:14px">';
+    if (currentSegment < 4) {
+        html += `<button class="btn-generate" onclick="advanceSegment()" style="margin-bottom:0">\u25B6 Start Segment ${currentSegment + 1}</button>`;
+    } else {
+        html += `<button class="btn-generate btn-end-game" onclick="endGame()" style="margin-bottom:0">\uD83C\uDFC1 End Game</button>`;
+    }
+    html += '</div>';
+
+    content.innerHTML = html;
+}
+
+function getCurrentBench() {
+    const segIdx = currentSegment - 1;
+    const seg = getSegData(segIdx);
+    if (!seg) return [];
+    // Current bench = original bench minus anyone who subbed in, plus not unavailable
+    const subbedIn = new Set(Object.values(currentSegSubs));
+    return seg.bench.filter(p => !unavailablePlayers.has(p) && !subbedIn.has(p));
+}
+
+function startSegment() {
+    gameStarted = true;
+    currentSegment = 1;
+    currentSegSubs = {};
+    // Apply any returnNextSeg players
+    returnNextSeg.forEach(p => {
+        unavailablePlayers.delete(p);
+    });
+    returnNextSeg = new Set();
+    renderAllSegmentCards();
+    renderPlayingTimeSummary();
+    renderGameControls();
+    document.getElementById('gameControlsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function markOut(playerName) {
+    const segIdx = currentSegment - 1;
+    const seg = getSegData(segIdx);
+    if (!seg) return;
+
+    const isGoalie = (seg.goalie === playerName) || (currentSegSubs[seg.goalie] === playerName);
+    unavailablePlayers.add(playerName);
+
+    // Find a sub from bench
+    const bench = getCurrentBench();
+    let subPlayer = null;
+    let subAlert = '';
+
+    if (isGoalie) {
+        // Prefer goalie-willing bench player
+        const goalieWillingSubs = bench.filter(p => goalieWilling.has(p));
+        if (goalieWillingSubs.length > 0) {
+            subPlayer = goalieWillingSubs.sort((a, b) => {
+                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B' && r !== 'X').length;
+                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B' && r !== 'X').length;
+                return aPlayed - bPlayed;
+            })[0];
+            subAlert = `\u26A1 SUB NOW \u2014 ${playerName} is coming off. \u2192 Send on: ${subPlayer} #${numFor(subPlayer)} as GOALIE`;
+        } else if (bench.length > 0) {
+            subPlayer = bench[0];
+            subAlert = `\u26A0 ${playerName} (goalie) is coming off. No goalie-willing player on bench. \u2192 Sending on ${subPlayer} #${numFor(subPlayer)} \u2014 Coach decision needed for goalie.`;
+        } else {
+            subAlert = `\u26A0 ${playerName} (goalie) is coming off. No bench players available. Coach decision required.`;
+        }
+    } else {
+        if (bench.length > 0) {
+            subPlayer = bench.sort((a, b) => {
+                const aPlayed = (actualRoles[a] || []).filter(r => r !== 'B' && r !== 'X').length;
+                const bPlayed = (actualRoles[b] || []).filter(r => r !== 'B' && r !== 'X').length;
+                return aPlayed - bPlayed;
+            })[0];
+            subAlert = `\u26A1 SUB NOW \u2014 ${playerName} is coming off. \u2192 Send on: ${subPlayer} #${numFor(subPlayer)}`;
+        } else {
+            subAlert = `\u26A0 ${playerName} is coming off. No bench players available. Coach decision required.`;
+        }
+    }
+
+    // Record sub
+    if (subPlayer) {
+        // Find who playerName was subbing for (or themselves)
+        let originalPlayer = playerName;
+        for (const [orig, sub] of Object.entries(currentSegSubs)) {
+            if (sub === playerName) { originalPlayer = orig; break; }
+        }
+        if (originalPlayer === playerName) {
+            currentSegSubs[playerName] = subPlayer;
+        } else {
+            currentSegSubs[originalPlayer] = subPlayer;
+        }
+    }
+
+    // Rebuild remaining segments
+    rebuildRemainingSegments();
+
+    // Show alert + re-render
+    renderAllSegmentCards();
+    renderPlayingTimeSummary();
+    renderGameControls();
+
+    // Inject sub alert at top of game controls
+    const content = document.getElementById('gameControlsContent');
+    content.innerHTML = `<div class="sub-alert">${subAlert}</div>` + content.innerHTML;
+}
+
+function markBackIn(playerName) {
+    if (gameStarted && currentSegment > 0) {
+        // Mid-segment: mark for return next segment
+        returnNextSeg.add(playerName);
+        renderGameControls();
+        // Rebuild for future segments including them
+        // They'll actually rejoin when advanceSegment processes returnNextSeg
+        unavailablePlayers.delete(playerName);
+        rebuildRemainingSegments();
+        unavailablePlayers.add(playerName); // keep them out for current seg display
+        renderAllSegmentCards();
+        renderPlayingTimeSummary();
+        renderGameControls();
+    }
+}
+
+function advanceSegment() {
+    const segIdx = currentSegment - 1;
+    const seg = getSegData(segIdx);
+    if (!seg) return;
+
+    // Lock completed segment with actual roles
+    const completedSeg = { goalie: seg.goalie, field: [...seg.field], bench: [...seg.bench] };
+
+    // Apply subs to the completed segment record
+    for (const [orig, sub] of Object.entries(currentSegSubs)) {
+        if (orig === completedSeg.goalie) {
+            completedSeg.goalie = sub;
+        } else {
+            const idx = completedSeg.field.indexOf(orig);
+            if (idx !== -1) completedSeg.field[idx] = sub;
+        }
+        // Sub came from bench
+        const bIdx = completedSeg.bench.indexOf(sub);
+        if (bIdx !== -1) completedSeg.bench.splice(bIdx, 1);
+    }
+
+    completedSegments.push(completedSeg);
+
+    // Record actual roles
+    savedPresentArr.forEach(p => {
+        if (unavailablePlayers.has(p) && !returnNextSeg.has(p)) {
+            actualRoles[p].push('X');
+        } else if (completedSeg.goalie === p) {
+            actualRoles[p].push('G');
+        } else if (completedSeg.field.includes(p)) {
+            actualRoles[p].push('F');
+        } else {
+            actualRoles[p].push('B');
+        }
+    });
+
+    // Remove from plannedSegments (first one is now completed)
+    plannedSegments.shift();
+
+    // Process returnNextSeg
+    returnNextSeg.forEach(p => {
+        unavailablePlayers.delete(p);
+    });
+    returnNextSeg = new Set();
+    currentSegSubs = {};
+
+    currentSegment++;
+
+    // Rebuild remaining
+    rebuildRemainingSegments();
+    renderAllSegmentCards();
+    renderPlayingTimeSummary();
+    renderGameControls();
+
+    document.getElementById('gameControlsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function rebuildRemainingSegments() {
+    const remainingCount = 4 - completedSegments.length;
+    if (remainingCount <= 0) { plannedSegments = []; return; }
+    // If we're mid-segment (live), don't rebuild the current live segment
+    // Only rebuild segments after the current one
+    const rebuildCount = gameStarted ? remainingCount - 1 : remainingCount;
+
+    if (rebuildCount <= 0) {
+        // Only current segment left, keep it
+        if (plannedSegments.length > 1) {
+            plannedSegments = [plannedSegments[0]];
+        }
+        return;
+    }
+
+    const availableArr = shuffle(
+        savedPresentArr.filter(p => !unavailablePlayers.has(p) || returnNextSeg.has(p))
+    );
+
+    const availableGoalies = savedGoalieArr.filter(p => !unavailablePlayers.has(p) || returnNextSeg.has(p));
+
+    if (availableArr.length < 6) {
+        // Show error but don't crash
+        const errBox = document.getElementById('errorBox');
+        errBox.textContent = `\u26A0\uFE0F Only ${availableArr.length} players available \u2014 need at least 6 to continue. Coach decision required.`;
+        errBox.style.display = 'block';
+        return;
+    }
+    document.getElementById('errorBox').style.display = 'none';
+
+    if (availableGoalies.length === 0) {
+        const errBox = document.getElementById('errorBox');
+        errBox.textContent = '\u26A0\uFE0F No goalie-willing players available. Coach decision required.';
+        errBox.style.display = 'block';
+        return;
+    }
+
+    const tierMap = {};
+    availableArr.forEach(p => {
+        const played = (actualRoles[p] || []).filter(r => r !== 'B' && r !== 'X').length;
+        const originalQuota = availableGoalies.includes(p) ? 3 : (playerTier[p] === 'three' ? 3 : 2);
+        tierMap[p] = Math.max(1, originalQuota - played);
+    });
+
+    const result = buildLineup(availableArr, availableGoalies, tierMap, rebuildCount);
+    if (result.error) return;
+
+    if (gameStarted && plannedSegments.length > 0) {
+        // Keep the current live segment, replace the rest
+        plannedSegments = [plannedSegments[0], ...result.segments];
+    } else {
+        plannedSegments = result.segments;
+    }
+}
+
+function endGame() {
+    // Lock final segment
+    advanceSegment();
+    currentSegment = 5;
+    gameEnded = true;
+
+    renderAllSegmentCards();
+    renderGameControls();
+
+    // Render end game summary
+    const summary = document.getElementById('endGameSummary');
+    summary.innerHTML = '';
+
+    savedPresentArr.forEach(player => {
+        const roles = actualRoles[player] || [];
+        const dotsHTML = roles.map(r => {
+            if (r === 'X') return `<div class="dot X">\u2014</div>`;
+            return `<div class="dot ${r}">${r}</div>`;
+        }).join('');
+
+        const activeCount = roles.filter(r => r === 'G' || r === 'F').length;
+
+        const row = document.createElement('div');
+        row.className = 'time-row';
+        row.innerHTML = `
+            <span>${player} <span style="color:var(--gray);font-size:0.8em">#${numFor(player)}</span> <span class="seg-badge-high">${activeCount} active</span></span>
+            <div class="time-dots">${dotsHTML}</div>
+        `;
+        summary.appendChild(row);
+    });
+
+    document.getElementById('endGameCard').classList.remove('hidden');
+    document.getElementById('endGameCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+init();
+</script>
+
+</body>
+</html>
