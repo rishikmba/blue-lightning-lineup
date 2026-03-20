@@ -655,7 +655,7 @@
         <div id="endGameSummary"></div>
     </div>
 
-    <div class="app-version">v2.0.3-beta</div>
+    <div class="app-version">v2.0.4-beta</div>
 
 </main>
 
@@ -1454,10 +1454,13 @@ function advanceSegment() {
 
     // Record actual roles
     // Use lockedGoalie (captured before rebuild) so injured goalie gets 'G'
+    // Unavailable field players get 'B' (didn't finish), not 'F'
     savedPresentArr.forEach(p => {
         if (p === lockedGoalie || completedSeg.goalie === p) {
             actualRoles[p].push('G');
-        } else if (seg.field.includes(p) || completedSeg.field.includes(p)) {
+        } else if (unavailablePlayers.has(p)) {
+            actualRoles[p].push('B');
+        } else if (completedSeg.field.includes(p)) {
             actualRoles[p].push('F');
         } else {
             actualRoles[p].push('B');
